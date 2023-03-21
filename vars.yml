@@ -1,0 +1,19 @@
+# vars.yml file for notes-project-deployment.yml playbook
+#########################
+---
+django_user: django
+project_name: notes_project
+virtualenv_name: notes_env
+##########
+django_user_home_path: "/home/{{ django_user }}"
+project_path: "{{ django_user_home_path }}/{{ project_name }}"
+project_settings_path: "{{ project_path }}/{{ project_name }}"
+project_etc_path: "{{ project_path }}/etc"
+project_logs_path: "{{ django_user_home_path }}/logs/{{ project_name }}"
+virtualenv_path: "{{ project_path }}/{{ virtualenv_name }}"
+##########
+git_remote_repository_url: "https://github.com/antonworkmode/notes_project.git"
+##########
+nginx_system_user_group: nginx
+nginx_include_config_path: "/etc/nginx/sites-enabled/*.conf"
+#########################

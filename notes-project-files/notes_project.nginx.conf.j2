@@ -1,0 +1,21 @@
+server {
+    listen 80;
+    server_name {{ nginx_server_name }};
+
+    access_log {{ project_logs_path }}/nginx-access.log;
+    error_log {{ project_logs_path }}/nginx-error.log;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        root {{ project_path }};
+    }
+
+    location /media/ {
+        root {{ project_path }};
+    }
+
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/run/gunicorn.sock;
+    }
+}

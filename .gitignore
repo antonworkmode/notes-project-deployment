@@ -1,0 +1,5 @@
+# vi .gitignore
+
+secrets.yml
+.env
+.DS_Store
