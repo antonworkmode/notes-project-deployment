@@ -1,4 +1,6 @@
 # vi hosts
 
 [servers_rhel8]
-alma8 ansible_host=xxx.xxx.xxx.xxx ansible_user=xxxxx
+alma8          ansible_host=xxx.xxx.xxx.xxx ansible_user=xxxxx
+alma8-database ansible_host=xxx.xxx.xxx.xxx ansible_user=xxxxx
+alma8-web      ansible_host=xxx.xxx.xxx.xxx ansible_user=xxxxx

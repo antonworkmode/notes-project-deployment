@@ -1,0 +1,16 @@
+# vi roles/database/tasks/main.yml
+#########################
+---
+- name: sudo dnf install epel-release
+  dnf:
+    name: ['epel-release']
+    state: latest
+
+- name: sudo dnf update
+  dnf:
+    name: ['*']
+    state: latest
+    update_cache: true
+
+- include_tasks: postgresql.yml
+#########################

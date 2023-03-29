@@ -1,0 +1,106 @@
+# vi roles/database/tasks/postgresql.yml
+#########################
+---
+# postgresql installation
+- name: sudo dnf install postgresql-remote-rpm-repository
+  dnf:
+    name: "https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
+    disable_gpg_check: true
+    state: latest
+
+- name: sudo dnf module disable postgresql
+  copy:
+    dest: /etc/dnf/modules.d/postgresql.module
+    content: |
+      [postgresql]
+      name=postgresql
+      stream=
+      profiles=
+      state=disabled
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: sudo dnf install packages
+  dnf:
+    name: ['postgresql{{ postgresql_version }}-server', 'postgresql{{ postgresql_version }}-devel', 'python3-psycopg2']
+    state: latest
+
+- name: checking postgresql initialization
+  stat:
+    path: "/var/lib/pgsql/{{ postgresql_version }}/data/pg_hba.conf"
+  register: postgresql_data
+
+- name: sudo postgresql-setup initdb
+  shell: "/usr/pgsql-{{ postgresql_version }}/bin/postgresql-{{ postgresql_version }}-setup initdb"
+  when: not postgresql_data.stat.exists
+
+- name: sudo systemctl enable --now postgresql
+  service:
+    name: "postgresql-{{ postgresql_version }}"
+    state: started
+    enabled: yes
+
+- name: creating a symbolic link for the pg_config file
+  file:
+    src: "/usr/pgsql-{{ postgresql_version }}/bin/pg_config"
+    dest: /usr/bin/pg_config
+    state: link
+    owner: root
+    group: root
+
+# postgresql database setup
+- name: creating a database user
+  postgresql_user:
+    name: "{{ database_user }}"
+    password: "{{ database_pass }}"
+  become_user: postgres
+
+- name: database creation
+  postgresql_db:
+    name: "{{ database_name }}"
+    owner: "{{ database_user }}"
+    encoding: UTF8
+    lc_ctype: "{{ locale }}"
+    lc_collate: "{{ locale }}"
+    template: template0
+  become_user: postgres
+
+- name: copying the pg_hba.conf file
+  copy:
+    src: pg_hba.conf
+    dest: "/var/lib/pgsql/{{ postgresql_version }}/data/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: '0600'
+  become_user: postgres
+  notify: sudo systemctl restart postgresql
+
+- name: setting listen_addresses parameter for postgresql
+  postgresql_set:
+    name: listen_addresses
+    value: '*'
+  become_user: postgres
+  notify: sudo systemctl restart postgresql
+
+- name: setting client_encoding parameter for postgresql
+  postgresql_set:
+    name: client_encoding
+    value: 'UTF8'
+  become_user: postgres
+  notify: sudo systemctl restart postgresql
+
+- name: setting default_transaction_isolation parameter for postgresql
+  postgresql_set:
+    name: default_transaction_isolation
+    value: 'read committed'
+  become_user: postgres
+  notify: sudo systemctl restart postgresql
+
+- name: setting timezone parameter for postgresql
+  postgresql_set:
+    name: TimeZone
+    value: 'Europe/Moscow'
+  become_user: postgres
+  notify: sudo systemctl restart postgresql
+#########################

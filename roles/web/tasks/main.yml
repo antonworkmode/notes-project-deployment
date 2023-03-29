@@ -1,0 +1,23 @@
+# vi roles/web/tasks/main.yml
+#########################
+---
+- name: sudo dnf install epel-release
+  dnf:
+    name: ['epel-release']
+    state: latest
+
+- name: sudo dnf update
+  dnf:
+    name: ['*']
+    state: latest
+    update_cache: true
+
+- name: sudo dnf install packages
+  dnf:
+    name: ['python3-pip', 'python3-virtualenv', 'git', 'nginx']
+    state: latest
+
+- include_tasks: django.yml
+- include_tasks: nginx.yml
+- include_tasks: gunicorn.yml
+#########################

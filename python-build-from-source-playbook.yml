@@ -1,0 +1,98 @@
+# Playbook for installing Python from source.
+#########################
+---
+- name: installing python from source
+  hosts: alma8
+  any_errors_fatal: true
+  become: true
+  vars:
+    python_version: 3.6.13
+##########
+  tasks:
+##########
+  - block:
+    - name: sudo apt-get update && sudo apt-get upgrade
+      apt:
+        upgrade: yes
+        update_cache: true
+        cache_valid_time: 86400
+        force_apt_get: true
+
+    - name: sudo apt-get install packages
+      apt:
+        name: ['build-essential', 'curl', 'libbz2-dev', 'llvm', 'liblzma-dev', 'libncurses5-dev', 'libncursesw5-dev', 'libreadline-dev', 'libssl-dev', 'libsqlite3-dev', 'make', 'tk-dev', 'wget', 'xz-utils', 'zlib1g-dev']
+        state: latest
+        force_apt_get: true
+    when: ansible_os_family=="Debian"
+##########
+  - block:
+    - name: sudo yum install epel-release
+      yum:
+        name: ['epel-release']
+        state: latest
+
+    - name: sudo yum update
+      yum:
+        name: ['*']
+        state: latest
+        update_cache: true
+
+    - name: sudo yum groupinstall "Development Tools"
+      yum:
+        name: ['@Development tools']
+        state: latest
+
+    - name: sudo yum install packages
+      yum:
+        name: ['bzip2-devel', 'gcc', 'libffi-devel', 'openssl-devel', 'tk-devel', 'wget', 'xz-devel']
+        state: latest
+    when:
+      - ansible_os_family=="RedHat"
+      - ansible_distribution_major_version=="7"
+##########
+  - block:
+    - name: sudo dnf install epel-release
+      dnf:
+        name: ['epel-release']
+        state: latest
+
+    - name: sudo dnf update
+      dnf:
+        name: ['*']
+        state: latest
+        update_cache: true
+
+    - name: sudo dnf groupinstall "Development Tools"
+      dnf:
+        name: ['@Development tools']
+        state: latest
+
+    - name: sudo dnf install packages
+      dnf:
+        name: ['bzip2-devel', 'gcc', 'libffi-devel', 'openssl-devel', 'tk-devel', 'wget', 'xz-devel']
+        state: latest
+    when:
+      - ansible_os_family=="RedHat"
+      - ansible_distribution_major_version=="8" or
+        ansible_distribution_major_version=="9"
+##########
+  - name: check if python is already installed
+    stat:
+      path: "/opt/python/{{ python_version }}/bin"
+    register: python
+
+  - name: wget Python.tgz && tar zxvf Python.tgz
+    unarchive:
+      src: "https://www.python.org/ftp/python/{{ python_version }}/Python-{{ python_version }}.tgz"
+      dest: /tmp
+      remote_src: true
+    when: not python.stat.exists
+
+  - name: build python from source
+    shell: "cd /tmp/Python-{{ python_version }} && {{ item }}"
+    loop:
+      - "./configure --prefix=/opt/python/{{ python_version }} --with-ensurepip=install --enable-optimizations --with-lto"
+      - make -j "$(nproc)"
+      - make altinstall
+    when: not python.stat.exists
+#########################

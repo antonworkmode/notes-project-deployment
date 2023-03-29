@@ -1,0 +1,21 @@
+# Playbook for notes_project application deployment.
+#########################
+---
+- name: postgresql deployment
+  hosts: alma8-database
+  any_errors_fatal: true
+  become: true
+  vars_files:
+    - secrets.yml
+  roles:
+    - database
+##########
+- name: django, nginx and gunicorn deployment
+  hosts: alma8-web
+  any_errors_fatal: true
+  become: true
+  vars_files:
+    - secrets.yml
+  roles:
+    - web
+#########################

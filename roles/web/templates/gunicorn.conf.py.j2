@@ -1,0 +1,11 @@
+# vi etc/gunicorn.conf.py
+
+import multiprocessing
+
+bind = 'unix:/run/gunicorn.sock'
+workers = multiprocessing.cpu_count() * 2 + 1
+
+accesslog = '{{ project_logs_path }}/gunicorn-access.log'
+errorlog = '{{ project_logs_path }}/gunicorn-error.log'
+loglevel = 'debug'
+capture_output = True

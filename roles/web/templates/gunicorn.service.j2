@@ -1,0 +1,14 @@
+[Unit]
+Description=gunicorn service
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+User={{ django_user }}
+Group={{ nginx_system_user_group }}
+WorkingDirectory={{ project_path }}
+ExecStart={{ virtualenv_path }}/bin/gunicorn --config {{ project_etc_path }}/gunicorn.conf.py {{ project_name }}.wsgi:application
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+# vi roles/web/handlers/main.yml
+#########################
+---
+- name: sudo systemctl restart nginx
+  service:
+    name: nginx
+    state: restarted
+
+- name: sudo systemctl restart gunicorn
+  service:
+    name: gunicorn
+    state: restarted
+
+- name: sudo systemctl daemon-reload
+  systemd:
+    daemon_reload: true
+#########################

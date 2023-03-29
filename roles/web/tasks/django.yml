@@ -1,0 +1,78 @@
+# vi roles/web/tasks/django.yml
+#########################
+---
+# django user
+- name: creating user for django project
+  user:
+    name: "{{ django_user }}"
+    password: "{{ django_password | password_hash('sha512') }}"
+    shell: /bin/bash
+    update_password: on_create
+  register: django_user_result
+
+- name: force new user to change password
+  shell: "chage -d 0 {{ django_user }}"
+  when: django_user_result.changed
+
+- name: sudo chmod 730 /home/django
+  file:
+    path: "{{ django_user_home_path }}"
+    state: directory
+    mode: '0730'
+
+- name: cloning a remote repository
+  git:
+    repo: "{{ git_remote_repository_url }}"
+    dest: "{{ project_path }}"
+  become_user: "{{ django_user }}"
+
+- name: copying the .env file
+  copy:
+    src: .env
+    dest: "{{ project_path }}/.env"
+    owner: "{{ django_user }}"
+    group: "{{ django_user }}"
+    mode: '0644'
+  become_user: "{{ django_user }}"
+
+- name: creating directories for logs
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ django_user }}"
+    group: "{{ django_user }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: '{{ django_user_home_path }}/logs', mode: '0775' }
+    - { path: '{{ project_logs_path }}', mode: '0775' }
+  become_user: "{{ django_user }}"
+
+# python virtual environment
+- name: sudo pip install packages
+  pip:
+    name: ['pip', 'virtualenv', 'virtualenvwrapper']
+    state: latest
+
+- name: pip install packages in virtualenv
+  pip:
+    name: "{{ item.name }}"
+    version: "{{ item.version }}"
+    virtualenv: "{{ virtualenv_path }}"
+  loop:
+    - { name: 'django', version: '2.2.28' }
+    - { name: 'psycopg2-binary', version: '2.8.6' }
+    - { name: 'gunicorn', version: '*' }
+    - { name: 'python-decouple', version: '*' }
+  become_user: "{{ django_user }}"
+
+- name: django project setup
+  django_manage:
+    command: "{{ item }}"
+    project_path: "{{ project_path }}"
+    virtualenv: "{{ virtualenv_path }}"
+  loop:
+    - makemigrations
+    - migrate
+    - collectstatic
+  become_user: "{{ django_user }}"
+#########################

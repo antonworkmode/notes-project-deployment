@@ -1,0 +1,47 @@
+# vi roles/web/tasks/nginx.yml
+#########################
+---
+- name: sudo usermod nginx -aG django
+  user:
+    name: "{{ nginx_system_user_group }}"
+    groups: "{{ django_user }}"
+    append: true
+
+- name: creating the sites-available and sites-enabled directories
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - { path: '/etc/nginx/sites-available' }
+    - { path: '/etc/nginx/sites-enabled' }
+
+- name: copying nginx config files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - { src: 'nginx.conf.j2', dest: '/etc/nginx/nginx.conf' }
+    - { src: 'nginx_proxy_params.j2', dest: '/etc/nginx/proxy_params' }
+    - { src: 'notes_project.nginx.conf.j2', dest: '/etc/nginx/sites-available/notes_project.nginx.conf' }
+  notify: sudo systemctl restart nginx
+
+- name: creating a symbolic link for the nginx config file
+  file:
+    src: /etc/nginx/sites-available/notes_project.nginx.conf
+    dest: /etc/nginx/sites-enabled/notes_project.nginx.conf
+    state: link
+    owner: root
+    group: root
+
+- name: sudo systemctl enable --now nginx
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+#########################
